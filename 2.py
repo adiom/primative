@@ -27,16 +27,18 @@ responses = [
 
 # Инициализация токенизатора
 tokenizer = Tokenizer()
-tokenizer.fit_on_texts(texts)
+tokenizer.fit_on_texts(texts + responses)
 
 # Преобразование текстов в последовательности чисел
-sequences = tokenizer.texts_to_sequences(texts)
+texts_sequences = tokenizer.texts_to_sequences(texts)
+responses_sequences = tokenizer.texts_to_sequences(responses)
 
 # Определение максимальной длины последовательности
-max_len = max(len(seq) for seq in sequences)
+max_len = max(len(seq) for seq in texts_sequences + responses_sequences)
 
 # Приведение всех последовательностей к одной длине
-padded_sequences = pad_sequences(sequences, maxlen=max_len, padding='post', truncating='post')
+texts_padded_sequences = pad_sequences(texts_sequences, maxlen=max_len, padding='post')
+responses_padded_sequences = pad_sequences(responses_sequences, maxlen=max_len, padding='post')
 
 # Создание модели
 model = Sequential([
@@ -49,7 +51,7 @@ model = Sequential([
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # Обучение модели
-model.fit(padded_sequences, np.array(tf.argmax(tf.one_hot(tokenizer.texts_to_sequences(responses), depth=len(tokenizer.word_index) + 1), axis=2)), epochs=100)
+model.fit(texts_padded_sequences, np.argmax(responses_padded_sequences, axis=1), epochs=100)
 
 # Сохранение модели
 model.save('chatbot_model.h5')

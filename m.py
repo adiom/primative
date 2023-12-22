@@ -5,38 +5,28 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, LSTM, Dense
 
-# Пример текстов для обучения
-texts = [
-    "Привет!",
-    "Как дела?",
-    "Что нового?",
-    "Как твои дела?",
-    "Пока!",
-    "До свидания!",
-]
+# Загрузка данных из файла
+with open('training_data.txt', 'r', encoding='utf-8') as file:
+    lines = file.readlines()
 
-# Ответы на соответствующие вопросы
-responses = [
-    "Привет!",
-    "Все отлично, спасибо!",
-    "Ничего особенного. А у тебя?",
-    "У меня все хорошо, спасибо за спрос!",
-    "Пока! Возвращайся еще!",
-    "До свидания! Приходи еще!",
-]
+# Разделение на вопросы и ответы
+questions = [line.strip() for i, line in enumerate(lines) if i % 2 == 0]
+answers = [line.strip() for i, line in enumerate(lines) if i % 2 != 0]
 
 # Инициализация токенизатора
 tokenizer = Tokenizer()
-tokenizer.fit_on_texts(texts)
+tokenizer.fit_on_texts(questions + answers)
 
 # Преобразование текстов в последовательности чисел
-sequences = tokenizer.texts_to_sequences(texts)
+questions_sequences = tokenizer.texts_to_sequences(questions)
+answers_sequences = tokenizer.texts_to_sequences(answers)
 
 # Определение максимальной длины последовательности
-max_len = max(len(seq) for seq in sequences)
+max_len = max(len(seq) for seq in questions_sequences + answers_sequences)
 
 # Приведение всех последовательностей к одной длине
-padded_sequences = pad_sequences(sequences, maxlen=max_len, padding='post', truncating='post')
+questions_padded_sequences = pad_sequences(questions_sequences, maxlen=max_len, padding='post')
+answers_padded_sequences = pad_sequences(answers_sequences, maxlen=max_len, padding='post')
 
 # Создание модели
 model = Sequential([
@@ -49,8 +39,8 @@ model = Sequential([
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # Обучение модели
-model.fit(padded_sequences, np.array(tf.argmax(tf.one_hot(tokenizer.texts_to_sequences(responses), depth=len(tokenizer.word_index) + 1), axis=2)), epochs=100)
+model.fit(questions_padded_sequences, np.argmax(answers_padded_sequences, axis=1), epochs=100)
 
 # Сохранение модели
 model.save('chatbot_model.h5')
-
+# modal
